@@ -17,9 +17,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-// import { useGoogleLogin } from "@react-oauth/google"; // This is likely not needed if using Firebase Google Auth
-// import axios from "axios"; // This is likely not needed anymore
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import { useNavigate } from "react-router-dom";
 
 const CreateTripHero = () => {
   // All const values
@@ -30,6 +29,7 @@ const CreateTripHero = () => {
   const [currentUser, setCurrentUser] = useState(null); // State to hold Firebase authenticated user
   const [isAuthReady, setIsAuthReady] = useState(false); // State to track if auth is ready
   const [errorMessage, setErrorMessage] = useState(""); // State to hold error messages for the user
+  const navigate = useNavigate();
 
   // Initialize Auth
   const auth = getAuth();
@@ -41,9 +41,6 @@ const CreateTripHero = () => {
       setIsAuthReady(true); // Auth state has been checked
       if (user) {
         console.log("Firebase Auth State Changed: User is logged in", user.email, user.uid);
-        // This is where you could potentially trigger OnGenerateTrip if you want it to auto-run
-        // after a user logs in, assuming form data is already filled.
-        // For now, let's keep it manual (user clicks "Generate Trip").
       } else {
         console.log("Firebase Auth State Changed: User is logged out");
       }
@@ -107,7 +104,7 @@ const CreateTripHero = () => {
     try {
       console.log("Generating travel plan with prompt:", FINAL_PROMPT);
       const aiResponse = await generateTravelPlan(FINAL_PROMPT);
-      console.log("AI Response received:", aiResponse);
+      console.log("AI Response (RAW) from generateTravelPlan:", aiResponse); // <-- NEW LOG
       setLoading(false);
       // Pass the Firebase authenticated user directly to SaveAITrip
       SaveAITrip(aiResponse, currentUser);
@@ -118,13 +115,13 @@ const CreateTripHero = () => {
       // Check for specific API error messages
       if (err.message && err.message.includes("The model is overloaded")) {
         setErrorMessage("AI service is currently busy. Please try again in a moment.");
-      } else if (err.code === "permission-denied") { // Re-add this for Firebase errors if they re-appear
+      } else if (err.code === "permission-denied") {
         setErrorMessage("Permission denied. Please check your Firebase rules or login status.");
       } else {
         setErrorMessage("An unexpected error occurred. Please try again.");
       }
     } finally {
-      setLoading(false); // Ensure loading is always turned off
+      setLoading(false);
     }
   };
 
@@ -132,12 +129,9 @@ const CreateTripHero = () => {
   const login = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      // 'auth' is already initialized and available from getAuth() in the component scope
       const result = await signInWithPopup(auth, provider);
-      const user = result.user; // This 'user' is the Firebase User object
+      const user = result.user;
 
-      // You can still store a simplified profile in localStorage if needed for other parts of your app,
-      // but for Firestore rules, the Firebase auth state is what matters.
       const profile = {
         id: user.uid,
         email: user.email,
@@ -148,25 +142,19 @@ const CreateTripHero = () => {
       };
 
       console.log("Firebase Login Success! User Profile:", profile);
-      localStorage.setItem("user", JSON.stringify(profile)); // Keep this if you use it elsewhere
+      localStorage.setItem("user", JSON.stringify(profile));
       setOpenDialog(false);
-      // IMPORTANT: If you want the trip to generate immediately after login, uncomment the line below.
-      // OnGenerateTrip();
-      // Otherwise, the user will need to click "Generate Trip" again.
     } catch (error) {
       console.error("Firebase login error:", error);
-      // Handle login error, e.g., show a message to the user
       setErrorMessage("Login failed. Please try again.");
     }
   };
 
   //saving trip details in firebase
-  // Accept the authenticated Firebase user directly as an argument
   const SaveAITrip = async (TripData, authenticatedUser) => {
     setLoading(true);
-    setErrorMessage(""); // Clear any previous error messages
+    setErrorMessage("");
 
-    // Use the authenticatedUser passed directly, which is guaranteed to be from Firebase Auth
     const userToSave = authenticatedUser;
 
     if (!userToSave || !userToSave.email) {
@@ -178,24 +166,33 @@ const CreateTripHero = () => {
 
     const docId = Date.now().toString();
 
-    let parsedTripData = TripData; // Default to original string
-    try {
-      // Attempt to parse the TripData string into a JSON object
-      parsedTripData = JSON.parse(TripData);
-      console.log("TripData successfully parsed as JSON.");
-    } catch (parseError) {
-      console.warn("Could not parse TripData as JSON. Saving as string. Error:", parseError);
-      // If parsing fails, it means TripData was not valid JSON, so we'll save it as a string.
-      // You might want to adjust your AIModel to ensure it always returns valid JSON.
+    let parsedTripData = TripData;
+    console.log("SaveAITrip: Incoming TripData (before parsing attempt):", TripData); // <-- NEW LOG
+    if (typeof TripData === 'string') {
+      let jsonString = TripData;
+      // Remove Markdown code block delimiters if present
+      if (jsonString.startsWith('```json\n') && jsonString.endsWith('\n```')) {
+        jsonString = jsonString.substring('```json\n'.length, jsonString.length - '\n```'.length);
+      } else if (jsonString.startsWith('```\n') && jsonString.endsWith('\n```')) {
+        jsonString = jsonString.substring('```\n'.length, jsonString.length - '\n```'.length);
+      }
+
+      try {
+        parsedTripData = JSON.parse(jsonString);
+        console.log("SaveAITrip: TripData successfully parsed as JSON.");
+      } catch (parseError) {
+        console.warn("SaveAITrip: Could not parse TripData as JSON. Saving as string. Error:", parseError);
+        parsedTripData = TripData;
+      }
     }
 
     console.log("--- Attempting to Save AI Trip ---");
     console.log("Authenticated User Email (from Firebase Auth):", userToSave.email);
     console.log("Document ID for new trip:", docId);
-    console.log("Data to be written (userEmail field):", userToSave.email); // This is what request.resource.data.userEmail will see
-    console.log("Full trip data being sent:", {
+    console.log("Data to be written (userEmail field):", userToSave.email);
+    console.log("Full trip data being sent (parsed or original string):", {
       userSelection: formData,
-      tripData: parsedTripData, // Use the parsed data here
+      tripData: parsedTripData,
       userEmail: userToSave.email,
       id: docId,
     });
@@ -203,15 +200,15 @@ const CreateTripHero = () => {
     try {
       await setDoc(doc(db, "AITrips", docId), {
         userSelection: formData,
-        tripData: parsedTripData, // Use the parsed data here
+        tripData: parsedTripData,
         userEmail: userToSave.email,
         id: docId,
       });
       console.log("Trip saved successfully to Firestore!");
-      setErrorMessage("Trip generated and saved successfully!"); // Success message
+      setErrorMessage("Trip generated and saved successfully!");
+      navigate(`/view-trip/${docId}`);
     } catch (error) {
       console.error("Firebase Firestore Save Error:", error);
-      // Log the full error object to see more details if possible
       if (error.code) {
         console.error("Firebase Error Code:", error.code);
         if (error.code === "permission-denied") {
