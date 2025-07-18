@@ -36,7 +36,8 @@ export const generateTravelPlan = async (prompt) => {
               },
               rating: { type: "NUMBER" },
               descriptions: { type: "STRING" }
-            }
+            },
+            required: ["HotelName", "Hotel address", "Price", "hotel_image_url", "geo_coordinates", "rating", "descriptions"] // Added required fields for hotels
           }
         },
         itinerary: {
@@ -62,10 +63,12 @@ export const generateTravelPlan = async (prompt) => {
                     },
                     ticket_Pricing: { type: "STRING" },
                     Time_to_travel: { type: "STRING" }
-                  }
+                  },
+                  required: ["placeName", "Place Details", "Place_Image_Url", "Geo_Coordinates", "ticket_Pricing", "Time_to_travel"] // Added required fields for places
                 }
               }
-            }
+            },
+            required: ["day", "places"] // Added required fields for itinerary days
           }
         }
       },
@@ -79,33 +82,64 @@ export const generateTravelPlan = async (prompt) => {
 
   while (retries < MAX_RETRIES) {
     try {
-      const response = await genAI.getGenerativeModel({ model }).generateContentStream({
+      const { response } = await genAI.getGenerativeModel({ model }).generateContent({
         contents,
         generationConfig,
       });
 
-      // --- CHANGE START ---
-      // Get the final aggregated response object
-      const aggregatedResponse = await response.response;
-      // Use the .text() method on the aggregated response to get the complete string
-      const result = aggregatedResponse.text();
-      // --- CHANGE END ---
+      // --- CRUCIAL CHANGE: Accessing the JSON directly ---
+      // When responseMimeType is application/json, the `response.candidates[0].content.parts[0].functionCall`
+      // or `response.candidates[0].content.parts[0].text` might contain the raw JSON string.
+      // However, if the API is truly returning JSON, the `response.text()` might be stringified.
+      // Let's try to get the JSON object directly if possible, or fall back to parsing.
 
-      return result; // If successful, return the result and exit loop
-    } catch (error) {
-      console.error(`AIModel: Attempt ${retries + 1} failed during stream generation or consumption:`, error);
+      // Option 1: Directly try to access the parsed JSON object if the API delivers it that way.
+      // This is the ideal scenario for `responseMimeType: "application/json"`
+      if (response && response.candidates && response.candidates[0] &&
+          response.candidates[0].content && response.candidates[0].content.parts &&
+          response.candidates[0].content.parts[0] && response.candidates[0].content.parts[0].text) {
 
-      // Check if the error is specifically 'Failed to parse stream'
-      if (error.message && error.message.includes("Failed to parse stream")) {
-        retries++;
-        console.log(`AIModel: Retrying... (${retries}/${MAX_RETRIES})`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * retries)); // Exponential backoff
+        const rawTextResponse = response.candidates[0].content.parts[0].text;
+        console.log("AIModel: Raw text response from model:", typeof rawTextResponse, rawTextResponse);
+
+        // Try to parse it here right after receiving it from the AI model.
+        // This is where the issue might be, and we want to catch it early.
+        try {
+            const parsedObject = JSON.parse(rawTextResponse);
+            console.log("AIModel: Successfully parsed AI response into object.");
+            return parsedObject; // Return the parsed object
+        } catch (parseErrorDuringAIResponse) {
+            console.warn("AIModel: Initial parse of raw text response failed. It might be malformed JSON or have extra characters. Error:", parseErrorDuringAIResponse);
+            // If it fails here, we return the raw string and let CreateTripHero handle the more aggressive parsing.
+            // This is a fallback if the AI isn't perfectly adhering to the schema request.
+            return rawTextResponse;
+        }
+
       } else {
-        // If it's a different error, re-throw immediately
-        throw error;
+          // Fallback if the structure is unexpected (e.g., if .text() is preferred, or if it's truly empty)
+          const resultText = await response.text();
+          console.warn("AIModel: Falling back to .text() method or response structure was unexpected.", typeof resultText, resultText);
+          try {
+             const parsedObject = JSON.parse(resultText);
+             console.log("AIModel: Successfully parsed fallback text response into object.");
+             return parsedObject;
+          } catch (e) {
+             console.error("AIModel: Fallback text response also not valid JSON. Returning raw string.");
+             return resultText; // Return the raw text if parsing fails here too
+          }
       }
+
+    } catch (error) {
+      console.error(`AIModel: Attempt ${retries + 1} failed during content generation:`, error); // Changed from stream generation
+
+      // The 'Failed to parse stream' error typically comes from `generateContentStream`
+      // For `generateContent`, network errors or API errors are more common.
+      // Let's retry on general errors for a few times.
+      retries++;
+      console.log(`AIModel: Retrying... (${retries}/${MAX_RETRIES})`);
+      await new Promise(resolve => setTimeout(resolve, 1000 * retries)); // Exponential backoff
     }
   }
-  // If all retries fail for 'Failed to parse stream'
-  throw new Error(`AIModel: Failed to generate content after ${MAX_RETRIES} retries due to stream parsing errors.`);
+  // If all retries fail
+  throw new Error(`AIModel: Failed to generate content after ${MAX_RETRIES} retries.`);
 };

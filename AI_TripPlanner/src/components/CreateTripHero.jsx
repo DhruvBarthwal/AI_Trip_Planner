@@ -1,6 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from 'react';
 import GooglePlacesAutocomplete from "react-google-places-autocomplete";
-import { useState, useEffect } from "react";
 import { SelectBudget, SelectTravelList } from "../constants/constant";
 import { generateTravelPlan } from "../service/AIModel";
 import { FcGoogle } from "react-icons/fc";
@@ -19,6 +18,8 @@ import {
 } from "@/components/ui/dialog";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
+import { MapPin, Calendar, DollarSign, Users, Sparkles, ArrowRight, Wallet, Coins, Gem, User } from "lucide-react";
+
 
 const CreateTripHero = () => {
   // All const values
@@ -26,9 +27,9 @@ const CreateTripHero = () => {
   const [formData, setFormData] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null); // State to hold Firebase authenticated user
-  const [isAuthReady, setIsAuthReady] = useState(false); // State to track if auth is ready
-  const [errorMessage, setErrorMessage] = useState(""); // State to hold error messages for the user
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
 
   // Initialize Auth
@@ -38,16 +39,15 @@ const CreateTripHero = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
-      setIsAuthReady(true); // Auth state has been checked
+      setIsAuthReady(true);
       if (user) {
         console.log("Firebase Auth State Changed: User is logged in", user.email, user.uid);
       } else {
         console.log("Firebase Auth State Changed: User is logged out");
       }
     });
-    return () => unsubscribe(); // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, [auth]);
-
 
   //All functions
   const handlePlaceSelect = (v) => {
@@ -67,12 +67,11 @@ const CreateTripHero = () => {
   }, [formData]);
 
   const OnGenerateTrip = async () => {
-    setErrorMessage(""); // Clear any previous error messages
+    setErrorMessage("");
 
-    // Check if auth state is ready and user is logged in via Firebase Auth directly
     if (!isAuthReady) {
       console.log("Authentication not ready yet. Please wait.");
-      setOpenDialog(true); // Still show dialog if auth isn't ready
+      setOpenDialog(true);
       return;
     }
 
@@ -83,7 +82,7 @@ const CreateTripHero = () => {
     }
 
     if (
-      (formData?.noOfdays >= 5 && !formData?.location) ||
+      (!formData?.location) ||
       !formData?.budget ||
       !formData?.traveller
     ) {
@@ -104,15 +103,14 @@ const CreateTripHero = () => {
     try {
       console.log("Generating travel plan with prompt:", FINAL_PROMPT);
       const aiResponse = await generateTravelPlan(FINAL_PROMPT);
-      console.log("AI Response (RAW) from generateTravelPlan:", aiResponse); // <-- NEW LOG
+      // IMPORTANT: Log the type and content of aiResponse IMMEDIATELY after it's received
+      console.log("AI Response (RAW) from generateTravelPlan:", typeof aiResponse, aiResponse);
       setLoading(false);
-      // Pass the Firebase authenticated user directly to SaveAITrip
       SaveAITrip(aiResponse, currentUser);
     } catch (err) {
       console.error("Error generating trip or saving AI trip:", err);
-      setLoading(false); // Ensure loading is turned off on error
+      setLoading(false);
 
-      // Check for specific API error messages
       if (err.message && err.message.includes("The model is overloaded")) {
         setErrorMessage("AI service is currently busy. Please try again in a moment.");
       } else if (err.code === "permission-denied") {
@@ -125,7 +123,6 @@ const CreateTripHero = () => {
     }
   };
 
-  //login
   const login = async () => {
     try {
       const provider = new GoogleAuthProvider();
@@ -150,7 +147,6 @@ const CreateTripHero = () => {
     }
   };
 
-  //saving trip details in firebase
   const SaveAITrip = async (TripData, authenticatedUser) => {
     setLoading(true);
     setErrorMessage("");
@@ -166,33 +162,59 @@ const CreateTripHero = () => {
 
     const docId = Date.now().toString();
 
-    let parsedTripData = TripData;
-    console.log("SaveAITrip: Incoming TripData (before parsing attempt):", TripData); // <-- NEW LOG
-    if (typeof TripData === 'string') {
-      let jsonString = TripData;
-      // Remove Markdown code block delimiters if present
-      if (jsonString.startsWith('```json\n') && jsonString.endsWith('\n```')) {
-        jsonString = jsonString.substring('```json\n'.length, jsonString.length - '\n```'.length);
-      } else if (jsonString.startsWith('```\n') && jsonString.endsWith('\n```')) {
-        jsonString = jsonString.substring('```\n'.length, jsonString.length - '\n```'.length);
+    let parsedTripData = TripData; // Start with the raw TripData
+
+    console.log("SaveAITrip: Incoming TripData (before parsing attempt):", typeof TripData, TripData);
+
+    // Loop to aggressively parse if it's a string that looks like JSON
+    while (typeof parsedTripData === 'string') {
+      let tempParsedData;
+      let cleanedString = parsedTripData.trim();
+
+      // Step 1: Remove markdown code block delimiters if present
+      // Handles '```json', '```', and optional newlines/spaces
+      const markdownRegex = /^```(?:json)?\s*([\s\S]*?)\s*```$/;
+      const match = cleanedString.match(markdownRegex);
+
+      if (match && match[1]) {
+        cleanedString = match[1].trim();
+        console.log("SaveAITrip: Markdown code block detected and stripped.");
       }
 
+      // Step 2: Attempt to parse the cleaned string
       try {
-        parsedTripData = JSON.parse(jsonString);
-        console.log("SaveAITrip: TripData successfully parsed as JSON.");
+        tempParsedData = JSON.parse(cleanedString);
+        // If successfully parsed, check if it's an object.
+        // If it's a string, it means it was double-stringified. Continue the loop.
+        // If it's an object, we're done.
+        parsedTripData = tempParsedData;
+        console.log("SaveAITrip: Successfully parsed a layer of JSON.");
+
       } catch (parseError) {
-        console.warn("SaveAITrip: Could not parse TripData as JSON. Saving as string. Error:", parseError);
-        parsedTripData = TripData;
+        // If JSON.parse fails, it's not valid JSON anymore, or it was never JSON
+        // Break the loop and use the current state of parsedTripData
+        console.warn("SaveAITrip: Could not parse string as JSON. Stopping parsing loop. Error:", parseError);
+        break;
       }
+    }
+
+    // After the loop, parsedTripData should ideally be an object.
+    // If it's still a string, it means it was not valid JSON even after stripping markdown/outer quotes.
+    if (typeof parsedTripData !== 'object' || parsedTripData === null) {
+      console.error("SaveAITrip: ERROR - Final data is not a valid JSON object. Cannot save trip data correctly.");
+      setLoading(false);
+      setErrorMessage("Failed to process trip data from AI. The format was unexpected.");
+      return;
     }
 
     console.log("--- Attempting to Save AI Trip ---");
     console.log("Authenticated User Email (from Firebase Auth):", userToSave.email);
+    console.log("SaveAITrip: Type of userToSave.email:", typeof userToSave.email, "Value:", userToSave.email);
     console.log("Document ID for new trip:", docId);
     console.log("Data to be written (userEmail field):", userToSave.email);
-    console.log("Full trip data being sent (parsed or original string):", {
+    console.log("Full trip data being sent:", {
       userSelection: formData,
-      tripData: parsedTripData,
+      tripData: parsedTripData, // This will now always be an object (or the function will have returned)
       userEmail: userToSave.email,
       id: docId,
     });
@@ -227,127 +249,262 @@ const CreateTripHero = () => {
     }
   };
 
+  const SelectBudget = [
+    {
+      id: 1,
+      title: "Cheap",
+      desc: "Stay conscious of costs",
+      icon: <Wallet className="w-10 h-10" />,
+    },
+    {
+      id: 2,
+      title: "Moderate",
+      desc: "Balance of comfort and cost",
+      icon: <Coins className="w-10 h-10" />,
+    },
+    {
+      id: 3,
+      title: "Luxury",
+      desc: "Enjoy premium experiences",
+      icon: <Gem className="w-10 h-10" />,
+    },
+  ];
+
+  const SelectTravelList = [
+    {
+      id: 1,
+      people: "1",
+      title: "Solo",
+      icon: <User className="w-10 h-10" />,
+      desc: "A solo adventure",
+    },
+    {
+      id: 2,
+      people: "2",
+      title: "Couple",
+      icon: <Users className="w-10 h-10" />,
+      desc: "For two travelers",
+    },
+    {
+      id: 3,
+      people: "3+",
+      title: "Family",
+      icon: <Users className="w-10 h-10" />,
+      desc: "Fun for the whole family",
+    },
+  ];
+
   return (
-    <div className="ml-70 mt-[40px]">
-      <div>
-        <h1 className="font-bold text-[28px]">
-          Tell us your travel preferences 🏖️
-        </h1>
-        <h1>
-          Just provide some basic information and our trip planner will generate
-          a customized itinerary based on your preferences
-        </h1>
-      </div>
-      <div className="mt-[45px]">
-        <h1 className="font-semibold text-[18px]">
-          What is destination of choice?
-        </h1>
-        <GooglePlacesAutocomplete
-          apiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
-          selectProps={{
-            place,
-            onChange: handlePlaceSelect,
-            placeholder: "Search your destination",
-            className: "text-black w-[1000px] mt-[30px]",
-          }}
-        />
-      </div>
-      <div className="mt-[45px]">
-        <h1 className="font-semibold text-[18px]">
-          How many days are you planning your trip?
-        </h1>
-        <input
-          className="text-black w-[1000px] mt-[30px] border-[1px] border-zinc-400 p-2 rounded-[4px]"
-          placeholder="Ex.3"
-          type="number"
-          onChange={(e) => handleInput("noOfDays", e.target.value)}
-        />
-      </div>
-      <div className="mt-[45px]">
-        <h1 className="font-bold text-[18px]">What is your budget?</h1>
-        <div className="grid grid-cols-3 gap-5 mt-5 mr-50">
-          {SelectBudget.map((item, index) => (
-            <div
-              key={index}
-              className={`p-4 border-zinc-400 border cursor-pointer flex flex-col gap-[10px] rounded-2xl hover:shadow-lg ${
-                formData?.budget == item.title &&
-                "shadow-lg border-zinc-950 scale-105"
-              }`}
-              onClick={() => handleInput("budget", item.title)}
-            >
-              <h2 className="text-3xl">{item.icon}</h2>
-              <h2 className="font-bold">{item.title}</h2>
-              <h2 className="text-[14px]">{item.desc}</h2>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="mt-[45px]">
-        <h1 className="font-bold text-[18px]">
-          What do you plan on travelling with your next adventure?
-        </h1>
-        <div className="grid grid-cols-3 gap-5 mt-5 mr-50">
-          {SelectTravelList.map((item, index) => (
-            <div
-              key={index}
-              className={`p-4 border-zinc-400 border cursor-pointer flex flex-col gap-[5px] rounded-2xl hover:shadow-lg ${
-                formData?.traveller == item.people &&
-                "shadow-lg border-zinc-950 scale-105"
-              }`}
-              onClick={() => handleInput("traveller", item.people)}
-            >
-              <h2 className="text-3xl">{item.icon}</h2>
-              <h2 className="font-bold">{item.title}</h2>
-              <h2 className="text-[14px]">{item.desc}</h2>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="mt-14 mb-14">
-        {errorMessage && (
-          <div className="text-red-500 text-sm mb-4 p-2 border border-red-300 bg-red-50 rounded-md">
-            {errorMessage}
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+            <Sparkles className="w-4 h-4" />
+            AI-Powered Trip Planning
           </div>
-        )}
-        <button
-          disabled={loading}
-          onClick={OnGenerateTrip}
-          className={`transition-all duration-300 rounded-[5px] text-white h-[38px] ${
-            loading
-              ? "w-[38px] bg-gray-500 flex items-center justify-center"
-              : "w-[140px] bg-zinc-800 hover:bg-zinc-700"
-          }`}
-        >
-          {loading ? (
-            <AiOutlineLoading3Quarters className="animate-spin h-5 w-5" />
-          ) : (
-            "Generate Trip"
-          )}
-        </button>
-      </div>
-      <div>
-        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-          <DialogContent className={`bg-white`}>
-            <DialogHeader>
-              <DialogDescription>
-                <h1 className="font-bold text-2xl">Loremipsum</h1>
-                <h2 className="font-semibold text-[16px] text-zinc-600 mt-[20px]">
-                  Sign in with Google
-                </h2>
-                <h2 className="text-[13px] text-zinc-600 ">
-                  Sign in to the App with Google authentication securely
-                </h2>
-                <button
-                  onClick={login}
-                  className="bg-zinc-900 text-white flex justify-center items-center gap-[5px] w-[200px] h-[35px] rounded-[10px] mt-[7px] ml-[120px]"
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
+            Plan your dream trip in seconds!
+          </h1>
+          <p className="text-xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
+            Share your travel interests — we’ll handle the planning magic.
+          </p>
+        </div>
+
+        <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-12 border border-gray-200/50 backdrop-blur-sm">
+
+          <div className="mb-10">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-blue-100 rounded-xl">
+                <MapPin className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Destination</h2>
+                <p className="text-gray-600">Where would you like to explore?</p>
+              </div>
+            </div>
+            <div className="relative">
+              <GooglePlacesAutocomplete
+                apiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
+                selectProps={{
+                  place,
+                  onChange: handlePlaceSelect,
+                  placeholder: "Search your dream destination...",
+                  className: "text-gray-900",
+                  styles: {
+                    control: (provided) => ({
+                      ...provided,
+                      minHeight: '56px',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '16px',
+                      fontSize: '16px',
+                      boxShadow: 'none',
+                      '&:hover': {
+                        borderColor: '#3b82f6',
+                      },
+                      '&:focus-within': {
+                        borderColor: '#3b82f6',
+                        boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)',
+                      }
+                    }),
+                    placeholder: (provided) => ({
+                      ...provided,
+                      color: '#9ca3af',
+                    }),
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="mb-10">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-green-100 rounded-xl">
+                <Calendar className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Duration</h2>
+                <p className="text-gray-600">How many days are you planning your trip?</p>
+              </div>
+            </div>
+            <input
+              className="w-full h-14 px-6 text-gray-900 bg-gray-50 border-2 border-gray-200 rounded-2xl focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all duration-200 text-lg placeholder-gray-400"
+              placeholder="e.g., 7 days"
+              type="number"
+              onChange={(e) => handleInput("noOfDays", e.target.value)}
+            />
+          </div>
+
+          <div className="mb-10">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-emerald-100 rounded-xl">
+                <DollarSign className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Budget Range</h2>
+                <p className="text-gray-600">Choose your preferred spending level</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {SelectBudget.map((item) => (
+                <div
+                  key={item.id}
+                  className={`group relative p-6 border-2 cursor-pointer rounded-2xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
+                    formData?.budget == item.title
+                      ? "border-blue-500 bg-blue-50 shadow-lg scale-105"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                  }`}
+                  onClick={() => handleInput("budget", item.title)}
                 >
-                  <FcGoogle className="mt-[2px]" /> Sign in with Google
-                </button>
-              </DialogDescription>
-            </DialogHeader>
-          </DialogContent>
-        </Dialog>
+                  <div className="text-4xl mb-4">{item.icon}</div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{item.title}</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">{item.desc}</p>
+                  {formData?.budget == item.title && (
+                    <div className="absolute top-4 right-4 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-12">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-purple-100 rounded-xl">
+                <Users className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Travel Companions</h2>
+                <p className="text-gray-600">Who will be joining you on this adventure?</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {SelectTravelList.map((item) => (
+                <div
+                  key={item.id}
+                  className={`group relative p-6 border-2 cursor-pointer rounded-2xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
+                    formData?.traveller == item.people
+                      ? "border-blue-500 bg-blue-50 shadow-lg scale-105"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                  }`}
+                  onClick={() => handleInput("traveller", item.people)}
+                >
+                  <div className="text-4xl mb-4">{item.icon}</div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{item.title}</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">{item.desc}</p>
+                  {formData?.traveller == item.people && (
+                    <div className="absolute top-4 right-4 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {errorMessage && (
+            <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-2xl">
+              <p className="text-red-700 text-sm font-medium">{errorMessage}</p>
+            </div>
+          )}
+
+          <div className="text-center">
+            <button
+              disabled={loading}
+              onClick={OnGenerateTrip}
+              className={`group relative overflow-hidden transition-all duration-300 rounded-2xl text-white font-bold text-lg shadow-2xl ${
+                loading
+                  ? "w-16 h-16 bg-gray-400 cursor-not-allowed"
+                  : "w-64 h-16 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 hover:from-blue-700 hover:via-purple-700 hover:to-blue-800 hover:shadow-blue-500/25 hover:scale-105"
+              }`}
+            >
+              {loading ? (
+                <AiOutlineLoading3Quarters className="animate-spin h-8 w-8 mx-auto" />
+              ) : (
+                <>
+                  <span className="relative z-10 flex items-center justify-center gap-3">
+                    Generate My Trip
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                </>
+              )}
+            </button>
+            <p className="text-gray-500 text-sm mt-4">
+              Powered by advanced AI technology
+            </p>
+          </div>
+        </div>
       </div>
+
+      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+        <DialogContent className="bg-white rounded-3xl border-0 shadow-2xl max-w-md mx-auto">
+          <DialogHeader className="text-center pb-6">
+            <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+              <Sparkles className="w-8 h-8 text-blue-600" />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-gray-900 mb-2">
+              Welcome to Tripify
+            </DialogTitle>
+            <DialogDescription className="text-gray-600">
+              <p className="text-lg mb-2">Sign in with Google</p>
+              <p className="text-sm">
+                Sign in to the App with Google authentication securely
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="pt-4">
+            <button
+              onClick={login}
+              className="w-full bg-white border-2 border-gray-200 hover:border-gray-300 text-gray-700 font-semibold py-4 px-6 rounded-2xl transition-all duration-200 hover:shadow-lg flex items-center justify-center gap-3 group"
+            >
+              <FcGoogle className="text-2xl" />
+              <span>Continue with Google</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

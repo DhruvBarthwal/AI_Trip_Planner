@@ -40,34 +40,53 @@ const Header = () => {
   const handleMyTrips = () => {
     navigate('/my-trips'); // Navigate to the My Trips page
   };
-  const handleCreateTrip = () =>{
+  const handleCreateTrip = () => {
     navigate('/createTrip')
   }
 
   return (
-    <div className='flex justify-between p-4 px-[20px] items-center'> {/* Added items-center for vertical alignment */}
+    <div className='flex justify-between p-4 px-[20px] items-center absolute top-0 left-0 w-full z-20'>
+ {/* Added items-center for vertical alignment */}
       <div>
-        <h1 className='font-bold text-[25px] text-orange-600 cursor-pointer' onClick={() => navigate('/')}>Logoipsum</h1> {/* Make logo clickable to go home */}
+        <h1 className='font-bold text-[35px] text-white cursor-pointer' onClick={() => navigate('/')}>Tripify</h1> {/* Make logo clickable to go home */}
       </div>
       <div>
         {currentUser ? (
           // If user is logged in, show My Trips and Sign Out buttons
           <div className="flex gap-4"> {/* Use flex and gap for spacing */}
-          <button
-            onClick = {handleCreateTrip}
-            className='bg-blue-600 text-white h-[38px] px-4 rounded-[14px] hover:bg-blue-700 transition-colors duration-200'
-          >
+            <button
+              onClick={handleCreateTrip}
+              className='
+                 text-blue-300 font-semibold border-[1px]
+                py-2 px-5 rounded-full shadow-md
+                hover:bg-blue-50  hover:shadow-lg hover:scale-105
+                transition-all duration-300 ease-in-out
+                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+              '
+            >
               + Create Trip
-          </button>
+            </button>
             <button
               onClick={handleMyTrips}
-              className='bg-blue-600 text-white h-[38px] px-4 rounded-[14px] hover:bg-blue-700 transition-colors duration-200'
+              className='
+                 text-blue-300 font-semibold border-[1px]
+                py-2 px-5 rounded-full shadow-md
+                hover:bg-blue-50 hover:shadow-lg hover:scale-105
+                transition-all duration-300 ease-in-out
+                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+              '
             >
               My Trips
             </button>
             <button
               onClick={handleSignOut}
-              className='bg-red-600 text-white h-[38px] px-4 rounded-[14px] hover:bg-red-700 transition-colors duration-200'
+              className='
+                text-red-300 font-semibold border-[1px]
+                py-2 px-5 rounded-full shadow-md
+                hover:bg-red-50 hover:shadow-lg hover:scale-105
+                transition-all duration-300 ease-in-out
+                focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50
+              '
             >
               Sign Out
             </button>
@@ -76,7 +95,13 @@ const Header = () => {
           // If user is logged out, show Sign In button
           <button
             onClick={() => navigate('/sign-in')} // Assuming you have a sign-in route
-            className='bg-zinc-800 text-white h-[38px] w-[80px] rounded-[14px] hover:bg-zinc-700 transition-colors duration-200'
+            className='
+              bg-white text-gray-700 font-semibold border-[1px]
+              py-2 px-5 rounded-full shadow-md
+              hover:bg-gray-100 hover:shadow-lg hover:scale-105
+              transition-all duration-300 ease-in-out
+              focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-opacity-50
+            '
           >
             Sign In
           </button>

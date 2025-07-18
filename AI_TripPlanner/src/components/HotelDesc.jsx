@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { MapPin, Star, DollarSign, Building2 } from 'lucide-react';
 
 const HotelDesc = ({ trip }) => {
   const [photoMap, setPhotoMap] = useState({});
@@ -52,75 +53,137 @@ const HotelDesc = ({ trip }) => {
 
   if (!hotelOptions || hotelOptions.length === 0) {
     return (
-      <div className="p-6 text-center text-gray-600 bg-white shadow-md rounded-lg mx-auto max-w-4xl mt-10">
-        <h1 className='font-bold text-2xl mb-4 text-gray-800'>Hotel Recommendations</h1>
-        <p className="text-lg">No hotel recommendations available for this trip.</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-12 text-center border border-gray-200/50">
+            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Building2 className="w-10 h-10 text-blue-600" />
+            </div>
+            <h1 className='text-3xl font-bold text-gray-800 mb-4'>Hotel Recommendations</h1>
+            <p className="text-lg text-gray-600">No hotel recommendations available for this trip.</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mt-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      <div className="mb-8 text-center">
-        <h1 className='font-extrabold text-4xl text-gray-900 leading-tight'>
-          Hotel Recommendations <span className="text-blue-600">🏨</span>
-        </h1>
-        <p className="mt-2 text-lg text-gray-600">Discover the best stays for your adventure.</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-16 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Section */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-3 bg-blue-100 text-blue-800 px-6 py-3 rounded-full text-sm font-semibold mb-6">
+            <Building2 className="w-5 h-5" />
+            Premium Accommodations
+          </div>
+          <h1 className='text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight'>
+            Hotel Recommendations
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            Discover carefully curated accommodations that perfectly complement your travel experience
+          </p>
+        </div>
 
-      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8'>
-        {hotelOptions.map((item, index) => {
-          const rating = typeof item.rating === 'number' ? item.rating : 0;
-          const fullStars = Math.floor(rating);
-          const hasHalfStar = rating % 1 !== 0;
+        {/* Hotels Grid */}
+        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8'>
+          {hotelOptions.map((item, index) => {
+            const rating = typeof item.rating === 'number' ? item.rating : 0;
+            const fullStars = Math.floor(rating);
+            const hasHalfStar = rating % 1 !== 0;
 
-          const mapUrl = item.geo_coordinates?.latitude && item.geo_coordinates?.longitude
-            ? `https://www.google.com/maps/search/?api=1&query=${item.geo_coordinates.latitude},${item.geo_coordinates.longitude}`
-            : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.HotelName + ' ' + (item['Hotel address'] || ''))}`;
+            const mapUrl = item.geo_coordinates?.latitude && item.geo_coordinates?.longitude
+              ? `https://www.google.com/maps/search/?api=1&query=${item.geo_coordinates.latitude},${item.geo_coordinates.longitude}`
+              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.HotelName + ' ' + (item['Hotel address'] || ''))}`;
 
-          const imageUrl = photoMap[item.HotelName] || 'https://placehold.co/400x250?text=Loading...';
+            const imageUrl = photoMap[item.HotelName] || 'https://placehold.co/400x250?text=Loading...';
 
-          return (
-            <Link to={mapUrl} key={index} target="_blank" rel="noopener noreferrer" className="block group">
-              <div className='bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 transform transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl'>
-                <img
-                  src={imageUrl}
-                  alt={item.HotelName ? `${item.HotelName} Hotel Image` : 'Hotel Image'}
-                  className='w-full h-52 object-cover rounded-t-2xl'
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = 'https://placehold.co/400x250/E0E0E0/333333?text=Image+Error';
-                  }}
-                />
-                <div className='p-5'>
-                  <h2 className='font-bold text-xl text-gray-900 mb-2 truncate'>{item.HotelName || 'Unknown Hotel'}</h2>
-                  <p className='text-gray-700 text-sm mb-1 flex items-center'>
-                    <span className='font-medium mr-1'>📍 Address:</span> {item['Hotel address'] || 'N/A'}
-                  </p>
-                  <p className='text-gray-800 text-base font-semibold mb-2'>
-                    <span className='font-medium mr-1'>💰 Price:</span> {item.Price || 'N/A'}
-                  </p>
-                  <div className='flex items-center text-gray-700 text-sm mb-2'>
-                    <span className='font-medium mr-1'>⭐ Rating:</span>
-                    {Array(fullStars).fill().map((_, i) => (
-                      <span key={i} className="text-yellow-500">★</span>
-                    ))}
-                    {hasHalfStar && <span className="text-yellow-500">½</span>}
-                    <span className="ml-1 text-gray-500">({rating > 0 ? rating.toFixed(1) : 'N/A'})</span>
+            return (
+              <Link to={mapUrl} key={index} target="_blank" rel="noopener noreferrer" className="block group">
+                <div className='bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden border border-gray-200/50 transform transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:border-blue-300/50'>
+                  {/* Hotel Image */}
+                  <div className="relative overflow-hidden">
+                    <img
+                      src={imageUrl}
+                      alt={item.HotelName ? `${item.HotelName} Hotel Image` : 'Hotel Image'}
+                      className='w-full h-52 object-cover transition-transform duration-300 group-hover:scale-110'
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://placehold.co/400x250/E0E0E0/333333?text=Image+Error';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   </div>
-                  <p className='text-gray-600 text-sm mt-3 leading-relaxed line-clamp-4'>
-                    {item.descriptions || 'No description available for this hotel.'}
-                  </p>
-                  {item.geo_coordinates && (
-                    <p className='text-blue-600 text-xs mt-3 opacity-80 group-hover:opacity-100 transition-opacity duration-300'>
-                      Lat: {item.geo_coordinates.latitude?.toFixed(4)}, Lng: {item.geo_coordinates.longitude?.toFixed(4)}
-                    </p>
-                  )}
+
+                  {/* Hotel Details */}
+                  <div className='p-6'>
+                    {/* Hotel Name */}
+                    <h2 className='text-xl font-bold text-gray-900 mb-4 line-clamp-2 leading-tight'>
+                      {item.HotelName || 'Unknown Hotel'}
+                    </h2>
+
+                    {/* Hotel Information */}
+                    <div className="space-y-3 mb-4">
+                      {/* Address */}
+                      <div className='flex items-start gap-3 text-gray-700'>
+                        <MapPin className="w-4 h-4 text-blue-600 mt-[4px] flex-shrink-0" />
+                        <span className='text-sm leading-relaxed line-clamp-2'>
+                          {item['Hotel address'] || 'Address not available'}
+                        </span>
+                      </div>
+
+                      {/* Price */}
+                      <div className='flex items-center gap-3 text-gray-800'>
+                        <DollarSign className="w-4 h-4 text-green-600 flex-shrink-0" />
+                        <span className='text-sm font-semibold'>
+                          {item.Price || 'Price not available'}
+                        </span>
+                      </div>
+
+                      {/* Rating */}
+                      <div className='flex items-center gap-3'>
+                        <Star className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                        <div className="flex items-center gap-1">
+                          <div className="flex items-center">
+                            {Array(fullStars).fill().map((_, i) => (
+                              <span key={i} className="text-yellow-500 text-sm">★</span>
+                            ))}
+                            {hasHalfStar && <span className="text-yellow-500 text-sm">☆</span>}
+                          </div>
+                          <span className="text-sm text-gray-600 ml-1">
+                            ({rating > 0 ? rating.toFixed(1) : 'N/A'})
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <div className="border-t border-gray-100 pt-4">
+                      <p className='text-gray-600 text-sm leading-relaxed line-clamp-3'>
+                        {item.descriptions || 'Experience exceptional hospitality and comfort at this carefully selected accommodation.'}
+                      </p>
+                    </div>
+
+                    {/* Coordinates (if available) */}
+                    {item.geo_coordinates && (
+                      <div className="mt-4 pt-3 border-t border-gray-100">
+                        <p className='text-blue-600 text-xs opacity-70 group-hover:opacity-100 transition-opacity duration-300'>
+                          Coordinates: {item.geo_coordinates.latitude?.toFixed(4)}, {item.geo_coordinates.longitude?.toFixed(4)}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* View on Maps Indicator */}
+                    <div className="mt-4 flex items-center justify-center">
+                      <div className="text-blue-600 text-xs font-medium opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+                        Click to view on Google Maps →
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </Link>
-          );
-        })}
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
