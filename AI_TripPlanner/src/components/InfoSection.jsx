@@ -62,9 +62,7 @@ const InfoSection = ({ tripData }) => {
 
   return (
     <div className="flex flex-col w-full">
-      {/* Banner Section */}
       <div className="relative w-full h-[500px] overflow-hidden mb-8">
-        {/* Background Image */}
         <img
           src={
             placePhotoUrl ||
@@ -79,10 +77,8 @@ const InfoSection = ({ tripData }) => {
           }}
         />
 
-        {/* Dim Overlay */}
         <div className="absolute inset-0 bg-black opacity-50"></div>
 
-        {/* Centered Content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white px-4 text-center">
           <h2 className="font-extrabold text-4xl sm:text-5xl mb-6 drop-shadow-md">
             {tripData?.userSelection?.location?.label || "Your Dream Destination"}
@@ -102,7 +98,6 @@ const InfoSection = ({ tripData }) => {
         </div>
       </div>
 
-      {/* Best Time to Visit */}
       {tripData?.tripData?.best_time_to_visit && (
         <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200 shadow-sm text-left mx-auto max-w-4xl">
           <h3 className="font-semibold text-lg text-yellow-800 mb-2">

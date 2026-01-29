@@ -92,14 +92,11 @@ const Hero = () => {
       );
     }
 
-    // Create seamless loop
     bgImage.forEach((_, i) => {
       const nextIndex = (i + 1) % bgImage.length;
 
-      // Hold current slide
       tl.to({}, { duration: 3 });
 
-      // Fade out current elements
       tl.to([textRefs.current[i], subtitleRefs.current[i]], {
         yPercent: -100,
         autoAlpha: 0,
@@ -119,7 +116,6 @@ const Hero = () => {
         "-=0.6"
       );
 
-      // Cross-fade images
       tl.to(
         imageRefs.current[i],
         {
@@ -140,7 +136,6 @@ const Hero = () => {
         "-=1.2"
       );
 
-      // Fade in next elements
       tl.fromTo(
         [textRefs.current[nextIndex], subtitleRefs.current[nextIndex]],
         { yPercent: 100, autoAlpha: 0 },
@@ -172,13 +167,12 @@ const Hero = () => {
 
   return (
     <div className="h-screen w-screen relative overflow-hidden font-sans">
-      {/* Navbar */}
+
       <nav className="absolute top-0 left-0 w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex items-center justify-between text-white z-50 bg-transparent">
         <div className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight">
           Tripify
         </div>
 
-        {/* Desktop Navigation */}
         <div className="hidden md:flex justify-center w-[300px] lg:w-[420px] gap-4 lg:gap-18 text-sm lg:text-base font-medium backdrop-blur-md bg-white/10 px-4 lg:px-8 py-2 lg:py-3 rounded-[20px] shadow-lg border border-white/20">
           <Link
             to="/"
@@ -200,7 +194,7 @@ const Hero = () => {
           </Link>
         </div>
 
-        {/* Mobile Menu Button */}
+
         <div className="md:hidden">
           <button className="text-white p-2">
             <svg
@@ -219,13 +213,13 @@ const Hero = () => {
           </button>
         </div>
 
-        {/* Sign In Button */}
+
         <button className="hidden md:block border border-white/60 px-4 lg:px-6 py-1.5 lg:py-2 rounded-lg hover:bg-white hover:text-black transition-all duration-200 font-medium backdrop-blur-sm bg-white/5 text-sm lg:text-base">
           Sign In
         </button>
       </nav>
 
-      {/* Background Images */}
+
       {bgImage.map((item, index) => (
         <div
           key={item.id}
@@ -241,7 +235,7 @@ const Hero = () => {
         </div>
       ))}
 
-      {/* Text Content */}
+
       {bgImage.map((item, index) => (
         <div
           key={`text-${item.id}`}
@@ -260,7 +254,6 @@ const Hero = () => {
         </div>
       ))}
 
-      {/* Right-side Places Images - Hidden on mobile/tablet */}
       {bgImage.map((item, index) => (
         <div
           key={`place-${item.id}`}
@@ -286,14 +279,14 @@ const Hero = () => {
         </div>
       ))}
 
-      {/* Explore Button */}
+
       <Link to="createTrip">
         <button className="absolute text-sm sm:text-base left-4 sm:left-8 lg:left-[80px] top-[350px] sm:top-[400px] lg:top-[500px] px-6 sm:px-8 py-2.5 sm:py-3 bg-violet-700 text-white font-medium rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-lg backdrop-blur-sm border border-blue-500/30 tracking-wide">
           Explore Destinations
         </button>
       </Link>
 
-      {/* Mobile Navigation Overlay (if needed) */}
+
       <div className="md:hidden fixed bottom-4 left-4 right-4 z-40">
         <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
           <div className="flex justify-around text-white text-sm">

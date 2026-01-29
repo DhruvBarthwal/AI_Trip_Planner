@@ -7,7 +7,6 @@ const HotelDesc = ({ trip }) => {
 
   const hotelOptions = trip?.tripData?.hotelOptions;
 
-  // Fetch photo for each hotel
   const fetchPhotoForHotel = async (hotelName) => {
     try {
       const apiKey = import.meta.env.VITE_GOOGLE_PLACE_API_KEY;
@@ -39,7 +38,7 @@ const HotelDesc = ({ trip }) => {
     }
   };
 
-  // Load all hotel images on mount
+
   useEffect(() => {
     if (hotelOptions?.length) {
       hotelOptions.forEach((hotel) => {
@@ -84,7 +83,7 @@ const HotelDesc = ({ trip }) => {
           </p>
         </div>
 
-        {/* Hotels Grid */}
+    
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8'>
           {hotelOptions.map((item, index) => {
             const rating = typeof item.rating === 'number' ? item.rating : 0;
@@ -100,7 +99,7 @@ const HotelDesc = ({ trip }) => {
             return (
               <Link to={mapUrl} key={index} target="_blank" rel="noopener noreferrer" className="block group">
                 <div className='bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden border border-gray-200/50 transform transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:border-blue-300/50'>
-                  {/* Hotel Image */}
+            
                   <div className="relative overflow-hidden">
                     <img
                       src={imageUrl}
@@ -114,16 +113,16 @@ const HotelDesc = ({ trip }) => {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   </div>
 
-                  {/* Hotel Details */}
+                  
                   <div className='p-6'>
-                    {/* Hotel Name */}
+                
                     <h2 className='text-xl font-bold text-gray-900 mb-4 line-clamp-2 leading-tight'>
                       {item.HotelName || 'Unknown Hotel'}
                     </h2>
 
-                    {/* Hotel Information */}
+                  
                     <div className="space-y-3 mb-4">
-                      {/* Address */}
+                
                       <div className='flex items-start gap-3 text-gray-700'>
                         <MapPin className="w-4 h-4 text-blue-600 mt-[4px] flex-shrink-0" />
                         <span className='text-sm leading-relaxed line-clamp-2'>
@@ -131,7 +130,6 @@ const HotelDesc = ({ trip }) => {
                         </span>
                       </div>
 
-                      {/* Price */}
                       <div className='flex items-center gap-3 text-gray-800'>
                         <DollarSign className="w-4 h-4 text-green-600 flex-shrink-0" />
                         <span className='text-sm font-semibold'>
@@ -139,7 +137,7 @@ const HotelDesc = ({ trip }) => {
                         </span>
                       </div>
 
-                      {/* Rating */}
+            
                       <div className='flex items-center gap-3'>
                         <Star className="w-4 h-4 text-yellow-500 flex-shrink-0" />
                         <div className="flex items-center gap-1">
@@ -156,14 +154,14 @@ const HotelDesc = ({ trip }) => {
                       </div>
                     </div>
 
-                    {/* Description */}
+               
                     <div className="border-t border-gray-100 pt-4">
                       <p className='text-gray-600 text-sm leading-relaxed line-clamp-3'>
                         {item.descriptions || 'Experience exceptional hospitality and comfort at this carefully selected accommodation.'}
                       </p>
                     </div>
 
-                    {/* Coordinates (if available) */}
+                
                     {item.geo_coordinates && (
                       <div className="mt-4 pt-3 border-t border-gray-100">
                         <p className='text-blue-600 text-xs opacity-70 group-hover:opacity-100 transition-opacity duration-300'>
@@ -172,7 +170,7 @@ const HotelDesc = ({ trip }) => {
                       </div>
                     )}
 
-                    {/* View on Maps Indicator */}
+               
                     <div className="mt-4 flex items-center justify-center">
                       <div className="text-blue-600 text-xs font-medium opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
                         Click to view on Google Maps →

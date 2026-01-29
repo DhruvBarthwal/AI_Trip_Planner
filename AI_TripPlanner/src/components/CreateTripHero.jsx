@@ -22,7 +22,7 @@ import { MapPin, Calendar, DollarSign, Users, Sparkles, ArrowRight, Wallet, Coin
 
 
 const CreateTripHero = () => {
-  // All const values
+
   const [place, setPlace] = useState();
   const [formData, setFormData] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
@@ -32,10 +32,8 @@ const CreateTripHero = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
 
-  // Initialize Auth
   const auth = getAuth();
 
-  // Effect to listen for auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
@@ -49,7 +47,6 @@ const CreateTripHero = () => {
     return () => unsubscribe();
   }, [auth]);
 
-  //All functions
   const handlePlaceSelect = (v) => {
     setPlace(v);
     handleInput("location", v);
@@ -103,7 +100,6 @@ const CreateTripHero = () => {
     try {
       console.log("Generating travel plan with prompt:", FINAL_PROMPT);
       const aiResponse = await generateTravelPlan(FINAL_PROMPT);
-      // IMPORTANT: Log the type and content of aiResponse IMMEDIATELY after it's received
       console.log("AI Response (RAW) from generateTravelPlan:", typeof aiResponse, aiResponse);
       setLoading(false);
       SaveAITrip(aiResponse, currentUser);
@@ -162,17 +158,14 @@ const CreateTripHero = () => {
 
     const docId = Date.now().toString();
 
-    let parsedTripData = TripData; // Start with the raw TripData
+    let parsedTripData = TripData; 
 
     console.log("SaveAITrip: Incoming TripData (before parsing attempt):", typeof TripData, TripData);
 
-    // Loop to aggressively parse if it's a string that looks like JSON
     while (typeof parsedTripData === 'string') {
       let tempParsedData;
       let cleanedString = parsedTripData.trim();
 
-      // Step 1: Remove markdown code block delimiters if present
-      // Handles '```json', '```', and optional newlines/spaces
       const markdownRegex = /^```(?:json)?\s*([\s\S]*?)\s*```$/;
       const match = cleanedString.match(markdownRegex);
 
@@ -181,25 +174,17 @@ const CreateTripHero = () => {
         console.log("SaveAITrip: Markdown code block detected and stripped.");
       }
 
-      // Step 2: Attempt to parse the cleaned string
       try {
         tempParsedData = JSON.parse(cleanedString);
-        // If successfully parsed, check if it's an object.
-        // If it's a string, it means it was double-stringified. Continue the loop.
-        // If it's an object, we're done.
         parsedTripData = tempParsedData;
         console.log("SaveAITrip: Successfully parsed a layer of JSON.");
 
       } catch (parseError) {
-        // If JSON.parse fails, it's not valid JSON anymore, or it was never JSON
-        // Break the loop and use the current state of parsedTripData
         console.warn("SaveAITrip: Could not parse string as JSON. Stopping parsing loop. Error:", parseError);
         break;
       }
     }
 
-    // After the loop, parsedTripData should ideally be an object.
-    // If it's still a string, it means it was not valid JSON even after stripping markdown/outer quotes.
     if (typeof parsedTripData !== 'object' || parsedTripData === null) {
       console.error("SaveAITrip: ERROR - Final data is not a valid JSON object. Cannot save trip data correctly.");
       setLoading(false);

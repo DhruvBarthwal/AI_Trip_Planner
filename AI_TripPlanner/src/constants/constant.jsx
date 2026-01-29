@@ -50,8 +50,6 @@ export const SelectTravelList =[
     },
 ]
 
-// In src/constants/constant.js or similar
-// In src/constants/constant.js or similar
 export const AI_Prompt = `Generate a comprehensive travel plan in STRICT, VALID, AND PARSABLE JSON format. The entire response MUST be a single JSON object.
 
 **Input Details:**

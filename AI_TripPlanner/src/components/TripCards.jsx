@@ -6,11 +6,10 @@ import { PHOTO_REF_BASE_URL } from "@/constants/GlobalAPI";
 const TripCards = ({ trip }) => {
   const [placePhotoUrl, setPlacePhotoUrl] = useState(null);
   useEffect(() => {
-    // Only attempt to get photo if tripData exists and has location label
     if (trip?.userSelection?.location?.label) {
       GetPlacePhoto();
     }
-  }, [trip]); // Depend on tripData
+  }, [trip]); 
 
   const GetPlacePhoto = async () => {
     try {
@@ -18,7 +17,6 @@ const TripCards = ({ trip }) => {
         textQuery: trip?.userSelection?.location?.label,
       };
 
-      // Ensure API key is available
       const apiKey = import.meta.env.VITE_GOOGLE_PLACE_API_KEY;
       if (!apiKey) {
         console.error("API Key for Google Places is missing!");
@@ -28,18 +26,18 @@ const TripCards = ({ trip }) => {
         return;
       }
 
-      const result = await GetPlaceDetails(data); // GetPlaceDetails already handles the API key header
+      const result = await GetPlaceDetails(data); 
 
       if (result.data.places && result.data.places.length > 0) {
-        const place = result.data.places[0]; // Get the first place found
+        const place = result.data.places[0]; 
 
         if (place.photos && place.photos.length > 0) {
-          // Get the first photo name (or iterate if you need a specific one)
-          const photoName = place.photos[0].name; // Using photos[0] for safety
+  
+          const photoName = place.photos[0].name; 
           const fullPhotoUrl =
             PHOTO_REF_BASE_URL.replace("{PHOTO_NAME}", photoName) + apiKey;
           console.log("Generated Photo URL:", fullPhotoUrl);
-          setPlacePhotoUrl(fullPhotoUrl); // Set the state to display the photo
+          setPlacePhotoUrl(fullPhotoUrl); 
         } else {
           console.log("No photos found for this place.");
           setPlacePhotoUrl(
@@ -56,7 +54,7 @@ const TripCards = ({ trip }) => {
       console.error("Error fetching place photo:", error);
       setPlacePhotoUrl(
         "https://placehold.co/1200x400/FF0000/FFFFFF?text=Error+Loading+Image"
-      ); // Error fallback
+      ); 
     }
   };
   return (

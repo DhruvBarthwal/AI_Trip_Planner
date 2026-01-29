@@ -1,44 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for redirection
+import { useNavigate } from 'react-router-dom'; 
 
 const Header = () => {
-  const [currentUser, setCurrentUser] = useState(null); // State to hold the authenticated user
-  const navigate = useNavigate(); // Initialize navigate hook
-  const auth = getAuth(); // Get the Firebase Auth instance
+  const [currentUser, setCurrentUser] = useState(null); 
+  const navigate = useNavigate();
+  const auth = getAuth(); 
 
   useEffect(() => {
-    // Set up an observer to listen for changes in the user's sign-in state
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // User is signed in
+
         setCurrentUser(user);
         console.log("Header: User is logged in:", user.email);
       } else {
-        // User is signed out
         setCurrentUser(null);
         console.log("Header: User is logged out.");
       }
     });
 
-    // Clean up the subscription when the component unmounts
     return () => unsubscribe();
-  }, [auth]); // Re-run effect if auth instance changes (though it typically won't)
+  }, [auth]); 
 
   const handleSignOut = async () => {
     try {
       await signOut(auth);
       console.log("User signed out successfully.");
-      localStorage.removeItem('user'); // Clear user data from local storage
-      navigate('/'); // Redirect to home page after sign out
+      localStorage.removeItem('user'); 
+      navigate('/'); 
     } catch (error) {
       console.error("Error signing out:", error);
-      // Optionally, show an error message to the user
     }
   };
 
   const handleMyTrips = () => {
-    navigate('/my-trips'); // Navigate to the My Trips page
+    navigate('/my-trips'); 
   };
   const handleCreateTrip = () => {
     navigate('/createTrip')
@@ -46,14 +42,12 @@ const Header = () => {
 
   return (
     <div className='flex justify-between p-4 px-[20px] items-center absolute top-0 left-0 w-full z-20'>
- {/* Added items-center for vertical alignment */}
       <div>
-        <h1 className='font-bold text-[35px] text-white cursor-pointer' onClick={() => navigate('/')}>Tripify</h1> {/* Make logo clickable to go home */}
+        <h1 className='font-bold text-[35px] text-white cursor-pointer' onClick={() => navigate('/')}>Tripify</h1> 
       </div>
       <div>
         {currentUser ? (
-          // If user is logged in, show My Trips and Sign Out buttons
-          <div className="flex gap-4"> {/* Use flex and gap for spacing */}
+          <div className="flex gap-4"> 
             <button
               onClick={handleCreateTrip}
               className='

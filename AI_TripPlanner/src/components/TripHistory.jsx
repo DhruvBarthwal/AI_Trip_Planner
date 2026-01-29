@@ -12,17 +12,12 @@ const TripHistory = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Initial fetch when component mounts
     GetUserTrip();
-  }, []); // Empty dependency array means this runs once on mount
+  }, []); 
 
-  /**
-   * Fetches user's trip data from Firestore.
-   * Redirects to home if no user is found in localStorage.
-   */
   const GetUserTrip = async () => {
-    setLoading(true); // Start loading
-    setError(null);    // Clear any previous errors before a new attempt
+    setLoading(true); 
+    setError(null);   
 
     const user = JSON.parse(localStorage.getItem("user"));
     console.log("CurrentUser from localStorage:", user);
@@ -61,15 +56,8 @@ const TripHistory = () => {
     }
   };
 
-  /**
-   * Deletes a specific trip from Firestore and then updates the local state.
-   * @param {string} tripId - The ID of the trip document to delete.
-   */
+
   const deleteTripFromFirestore = async (tripId) => {
-    // Optionally, add a confirmation dialog here for better UX
-    // if (!window.confirm("Are you sure you want to delete this trip? This action cannot be undone.")) {
-    //   return;
-    // }
 
     try {
       console.log(`Attempting to delete trip with ID: ${tripId}`);
@@ -78,16 +66,15 @@ const TripHistory = () => {
 
       console.log(`Trip with ID: ${tripId} successfully deleted from Firestore.`);
 
-      // Update local state to reflect the deletion
       setUserTrips((prevTrips) => prevTrips.filter((trip) => trip.id !== tripId));
     } catch (err) {
       console.error(`Error deleting trip with ID: ${tripId} from Firestore:`, err);
-      // More specific error message for the user
+    
       setError(`Failed to delete trip: ${err.message || "Unknown error"}. Please try again.`);
     }
   };
 
-  // Conditionally render based on loading and error states
+
   if (loading) {
     return (
       <div className="relative min-h-screen flex items-center justify-center bg-gray-900 bg-cover bg-center brightness-[0.4]"
@@ -104,7 +91,7 @@ const TripHistory = () => {
         <div className="text-red-400 text-2xl z-10 p-4 bg-red-900 bg-opacity-70 rounded-lg">
           <p>{error}</p>
           <button
-            onClick={GetUserTrip} // Call GetUserTrip to retry fetching
+            onClick={GetUserTrip} 
             className="block mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             Retry Loading Trips
@@ -116,7 +103,6 @@ const TripHistory = () => {
 
   return (
     <div className="relative min-h-screen">
-      {/* Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center brightness-[0.4] z-0"
         style={{
@@ -124,7 +110,6 @@ const TripHistory = () => {
         }}
       ></div>
 
-      {/* Overlay Content */}
       <div className="relative z-10 px-6 py-10">
         <h1 className="font-bold text-amber-300 text-5xl mb-8 mt-[100px]">
           My Trips
